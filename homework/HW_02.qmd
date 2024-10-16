@@ -1,0 +1,200 @@
+---
+title: "Homework 2"
+format: html
+---
+
+__Due Date:__ 2022-10-16 at 8:30 AM PT
+---
+
+
+__Name:__ Luke Schlake
+
+
+
+For this assignment, you will practice downloadings, cleaning, and analyzing data from the [National Risk Index (NRI)](https://hazards.fema.gov/nri/) and the [CDC Social Vulnerability Index (SVI)](https://www.atsdr.cdc.gov/placeandhealth/svi/index.html).
+
+## Preparation
+
+1. Create a 'data' folder in the root directory of this repository.
+1. Inside the 'data' folder, create a 'raw' folder.
+1. Add and commit a '.gitignore' file to the root directory of this repository that excludes all contents of the 'data' folder.
+1. Download the county-level NRI and SVI data for the entire United States. Place the data in the 'data/raw' folder.
+1. In the repository README, provide a brief (1-2 sentence) description of each file in the 'data' folder and a link to the original source of the data.
+
+## Task 1 - NRI Data Cleaning
+
+__1. Import the NRI data. Ensure that the [FIPS code](https://en.wikipedia.org/wiki/Federal_Information_Processing_Standard_state_code) variable ('STCOFIPS') is correctly identified as a string / character variable. Otherwise, the leading zeros will be removed.__
+
+```{python}
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import zipfile 
+
+with zipfile.ZipFile("data/raw/NRI_Table_Counties.zip","r") as f:
+    f.extractall("data/raw/NRI")
+
+NRI_data= pd.read_csv("data/raw/NRI/NRI_Table_Counties.csv")
+
+```
+
+
+```{python}
+
+```
+
+```{python}
+
+SVI_data.head(10)
+NRI_data.head(10)
+print(NRI_data.columns)
+
+```
+
+```{python}
+
+NRI_data["STCOFIPS"]
+
+```
+
+
+__2. Subset the NRI data to include only the 5-digit state/county FIPS code and all colums ending with '\_AFREQ' and '\_RISKR'. Each of these columns represents a different hazard type.__
+
+```{python}
+
+#Filter for specific columns 
+NRI_filtered = pd.DataFrame()
+NRI_filtered["FIPS"] = NRI_data["STCOFIPS"]
+for p in NRI_data.columns:
+    if p.endswith("_AFREQ") | p.endswith("_RISKR"):
+        NRI_filtered[p]=NRI_data[p]
+NRI_filtered.columns
+
+
+```
+__3. Create a table / dataframe that, for each hazard type, shows the number of missing values in the '\_AFREQ' and '\_RISKR' columns.__
+```{python}
+
+data = pd.DataFrame(NRI_filtered.isnull().sum())
+print(data)
+
+```
+__4. Show the cross-tabulation of the 'AVLN_AFREQ' and 'AVLN_RISKR' columns (including missing values). What do you observe?__
+```{python}
+
+crosstab = pd.crosstab(NRI_filtered["AVLN_AFREQ"],NRI_filtered["AVLN_RISKR"])
+print(crosstab)
+
+```
+__5. Assuming that a risk that is "not applicable" to a county has an annualized frequency of 0, impute the relevant missing values in the '\_AFREQ' columns with 0.__
+```{python}
+
+for p in NRI_data.columns:
+    if p.endswith("_AFREQ"):
+        NRI_filtered[p]=NRI_data[p].fillna(0)
+
+NRI_filtered["FIPS"]=NRI_filtered["FIPS"].astype(str)
+
+```
+
+
+## Task 2 - SVI Data Cleaning
+
+__1. Import the SVI data. Ensure that the FIPS code is correctly identified as a string / character variable. Otherwise, the leading zeros will be removed.__
+
+```{python}
+
+SVI_data= pd.read_csv("data/raw/SVI_2022_US_county.csv")
+SVI_data["FIPS"]=SVI_data["FIPS"].astype(str)
+#FIPS is successfully changed to an object
+
+```
+
+
+
+__1. Subset the SVI data to include only the following columns:__
+`ST, STATE, ST_ABBR, STCNTY, COUNTY, FIPS, LOCATION, AREA_SQMI, E_TOTPOP, EP_POV150, EP_UNEMP, EP_HBURD, EP_NOHSDP, EP_UNINSUR, EP_AGE65, EP_AGE17, EP_DISABL, EP_SNGPNT, EP_LIMENG, EP_MINRTY, EP_MUNIT, EP_MOBILE, EP_CROWD, EP_NOVEH, EP_GROUPQ, EP_NOINT, EP_AFAM, EP_HISP, EP_ASIAN, EP_AIAN, EP_NHPI, EP_TWOMORE, EP_OTHERRACE`
+```{python}
+
+list = ["ST", "STATE", "ST_ABBR", "STCNTY", "COUNTY", "FIPS", "LOCATION", "AREA_SQMI", "E_TOTPOP", "EP_POV150", "EP_UNEMP", "EP_HBURD", "EP_NOHSDP", "EP_UNINSUR", "EP_AGE65", "EP_AGE17", "EP_DISABL", "EP_SNGPNT", "EP_LIMENG", "EP_MINRTY", "EP_MUNIT", "EP_MOBILE", "EP_CROWD", "EP_NOVEH", "EP_GROUPQ", "EP_NOINT", "EP_AFAM", "EP_HISP", "EP_ASIAN", "EP_AIAN", "EP_NHPI", "EP_TWOMORE", "EP_OTHERRACE"]
+
+SVI_filtered=pd.DataFrame()
+
+for x in list:
+    SVI_filtered[x]=SVI_data[x]
+
+SVI_filtered["FIPS"]=SVI_filtered["FIPS"].astype(str)
+NRI_filtered["FIPS"]=NRI_filtered["FIPS"].astype(str)
+
+```
+
+__2. Create a table / dataframe that shows the number of missing values in each column. (Hint: if you wrote a function for Task 1, you can reuse it here.)__
+
+```{python}
+
+data = pd.DataFrame(SVI_filtered.isnull().sum())
+print(data)
+
+```
+
+## Task 3 - Data Merging
+__1. Identify any FIPS codes that are present in the NRI data but not in the SVI data and vice versa. Describe any discrepancies and possible causes? What to these discrepancies, if any, mean for interpreting results based on the merged dataset moving forward?__
+```{python}
+
+#All the missing NRI missing FIPS codes in the SVI begin with 7 and are 5 digits (or are close to a FIPS code beginning with 7, ex: 69001)
+#I used RANDChat for this block to determine the use of the .isin function
+NRI_filtered["matches"] = NRI_filtered["FIPS"].isin(SVI_filtered["FIPS"])
+NRI_filtered[["matches","FIPS"]].sort_values(by="matches",ascending=True)
+pd.set_option("display.max_rows", None)
+NRI_filtered[["matches","FIPS"]]
+
+```
+
+```{python}
+
+#All the missing NRI missing FIPS codes in the SVI begin with 9 and are 4 digits
+SVI_filtered["matches"] = SVI_filtered["FIPS"].isin(NRI_filtered["FIPS"])
+SVI_filtered[["matches","FIPS"]].sort_values(by="matches",ascending=False)
+
+```
+
+__2. Merge the NRI and SVI data on the FIPS code. Use an outer join to keep all counties in the final dataset.__
+```{python}
+
+merged_data = pd.merge(SVI_filtered, NRI_filtered, on="FIPS",how="outer")
+merged_data.head(10)
+
+```
+__3. Create a table / dataframe that shows the number of missing values in each column of the merged dataset.__
+
+```{python}
+
+missing_data=merged_data.isnull().sum()
+missing_data
+
+```
+
+## Task 4 - Data Analysis
+
+__1. For each numerical variable in the merged dataset, plot a histogram showing the distribution of values. (Hint: write a function to make the histogram for a single variable, then use a loop or apply function to make the histograms for all numerical variables.)__
+
+```{python}
+
+import matplotlib.pyplot as plt
+
+#I used RANDchat to generate the is_number function and to see how the .apply/.all function was used to call is_number
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+for p in merged_data.columns:
+    numeric = merged_data[p].apply(is_number).all()
+    if numeric==True:
+        print(p)
+        plt.hist(merged_data[p])
+        plt.show()
+
+
