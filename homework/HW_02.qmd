@@ -1,9 +1,8 @@
 ---
 title: "Homework 2"
-format: 
+format:
     html:
         embed-resources: true
-
 ---
 
 __Due Date:__ 2022-10-16 at 8:30 AM PT
@@ -80,7 +79,7 @@ __3. Create a table / dataframe that, for each hazard type, shows the number of 
 
 data = pd.DataFrame(NRI_filtered.isnull().sum())
 print(data)
-#text
+
 ```
 __4. Show the cross-tabulation of the 'AVLN_AFREQ' and 'AVLN_RISKR' columns (including missing values). What do you observe?__
 ```{python}
